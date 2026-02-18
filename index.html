@@ -11,34 +11,32 @@
         .store-pill-selected { background-color: #6366f1 !important; color: white !important; }
         #store-nav::-webkit-scrollbar { display: none; }
         .checkmark-overlay { pointer-events: none; } 
-        /* Ensure buttons are physically large enough and on top */
-        button, input, label { min-height: 44px; cursor: pointer; position: relative; z-index: 10; }
-        .form-container { position: relative; z-index: 20; }
+        .tap-target { min-height: 44px; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-40 font-sans">
 
-    <div class="sticky top-0 bg-white shadow-md z-[100]">
+    <div class="sticky top-0 bg-white shadow-md z-50">
         <div class="flex overflow-x-auto p-2 space-x-4 border-b" id="store-nav">
-            <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-3 font-bold whitespace-nowrap text-sm">All Items</button>
-            <button onclick="setFilter('Costco')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm">Costco</button>
-            <button onclick="setFilter('Whole Foods')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm">Whole Foods</button>
-            <button onclick="setFilter('Trader Joe\'s')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm">Trader Joe's</button>
+            <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-3 font-bold whitespace-nowrap text-sm tap-target">All Items</button>
+            <button onclick="setFilter('Costco')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm tap-target">Costco</button>
+            <button onclick="setFilter('Whole Foods')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm tap-target">Whole Foods</button>
+            <button onclick="setFilter('Trader Joe\'s')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm tap-target">Trader Joe's</button>
         </div>
     </div>
 
-    <div class="p-4 form-container">
+    <div class="p-4">
         <div class="bg-white p-4 rounded-2xl shadow-sm mb-6 border border-gray-200">
             <h2 id="form-title" class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-3">Add New Item</h2>
             <div class="flex flex-col gap-4">
                 <div class="flex gap-3">
-                    <label class="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center relative border-2 border-dashed border-gray-200 overflow-hidden cursor-pointer">
-                        <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleImage(this)">
+                    <div class="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center relative border-2 border-dashed border-gray-200 overflow-hidden">
+                        <input type="file" id="file-input" accept="image/*" class="absolute inset-0 opacity-0 z-20" onchange="handleImage(this)">
                         <img id="form-preview" class="hidden absolute inset-0 w-full h-full object-cover">
                         <span id="form-icon" class="text-2xl text-gray-300">+</span>
-                    </label>
+                    </div>
                     <div class="flex-1 flex flex-col gap-2">
-                        <input type="text" id="item-name" placeholder="Item Name" class="w-full p-3 bg-gray-50 rounded-lg text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" id="item-name" placeholder="Item Name" class="w-full p-3 bg-gray-50 rounded-lg text-sm border border-gray-100">
                         <div class="flex gap-1 overflow-x-auto pb-1" id="tag-container">
                             <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white">Costco</button>
                             <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white">Whole Foods</button>
@@ -61,7 +59,8 @@
     </div>
 
     <script>
-        const DB_NAME = 'vGroceries_Ultra_Stable_v4';
+        // Changed DB name to ensure a clean start with the new filing logic
+        const DB_NAME = 'vGroceries_BestVersion_Fixed';
         let items = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         let currentFilter = 'All';
         let selectedStores = [];
@@ -91,7 +90,7 @@
                         canvas.width = img.width * scale;
                         canvas.height = img.height * scale;
                         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        currentImageData = canvas.toDataURL('image/jpeg', 0.6); // Lower quality = more storage
+                        currentImageData = canvas.toDataURL('image/jpeg', 0.7);
                         document.getElementById('form-preview').src = currentImageData;
                         document.getElementById('form-preview').classList.remove('hidden');
                         document.getElementById('form-icon').classList.add('hidden');
@@ -185,9 +184,10 @@
             const grid = document.getElementById('item-grid');
             let filtered = items;
             
+            // FILING FIX: This logic now correctly matches stores
             if (currentFilter !== 'All') {
                 filtered = items.filter(i => {
-                    return i.stores.some(s => s.trim().toLowerCase() === currentFilter.trim().toLowerCase()) && i.needed;
+                    return i.stores.some(s => s.trim() === currentFilter.trim()) && i.needed;
                 });
             }
 
@@ -196,4 +196,17 @@
                     <img src="${item.img}" class="w-full h-32 object-cover" onclick="toggleNeeded(${item.id})">
                     <div class="p-3">
                         <p class="font-bold text-[11px] uppercase truncate mb-2">${item.name}</p>
-                        <div class="flex gap-
+                        <div class="flex gap-2">
+                            <button onclick="editItem(${item.id})" class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">EDIT</button>
+                            <button onclick="deleteItem(${item.id})" class="text-[9px] font-bold text-red-400 bg-red-50 px-2 py-1 rounded">DEL</button>
+                        </div>
+                    </div>
+                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center text-4xl checkmark-overlay">✓</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        render();
+    </script>
+</body>
+</html>
