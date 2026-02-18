@@ -10,7 +10,6 @@
         .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
         .store-pill-selected { background-color: #6366f1; color: white; border-color: #6366f1; }
         #store-nav::-webkit-scrollbar { display: none; }
-        /* Prevent zoom on input for iOS */
         input[type="text"] { font-size: 16px !important; }
     </style>
 </head>
@@ -61,7 +60,7 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'vGroceries_matthew_vFinal_02';
+        const STORAGE_KEY = 'vGroceries_matthew_v6';
         let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentFilter = 'All';
         let deleteMode = false;
@@ -124,15 +123,15 @@
         }
 
         function toggleItemState(id) {
+            const item = items.find(i => i.id === id);
             if (deleteMode) {
-                if(confirm("Permanently delete this item from your library?")) {
+                if(confirm(`Permanently delete "${item.name}"?`)) {
                     items = items.filter(i => i.id !== id);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
                     render();
                 }
                 return;
             }
-            const item = items.find(i => i.id === id);
             item.needed = !item.needed;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
             render();
@@ -161,6 +160,7 @@
             const grid = document.getElementById('item-grid');
             let filtered = items;
             
+            // Logically: If in a store tab, only show items tagged for that store AND currently "needed"
             if (currentFilter !== 'All') {
                 filtered = items.filter(i => i.stores.includes(currentFilter) && i.needed === true);
             }
