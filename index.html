@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,8 +12,7 @@
         .store-pill-selected { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         #store-nav::-webkit-scrollbar { display: none; }
         input[type="text"] { font-size: 16px !important; appearance: none; }
-        /* Ensure buttons are always clickable */
-        button, input, select, .tag-pill { pointer-events: auto !important; position: relative; z-index: 10; }
+        button, input, .tag-pill { pointer-events: auto !important; position: relative; z-index: 10; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-32 font-sans">
@@ -31,11 +31,10 @@
         <div class="flex flex-col gap-3">
             <div class="flex gap-2">
                 <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300">
-                    <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-20" onchange="previewImage(this)">
+                    <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-20" onchange="processAndPreview(this)">
                     <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover">
                     <span id="plus-icon" class="text-3xl text-gray-400">+</span>
                 </div>
-                
                 <div class="flex-1 flex flex-col gap-2">
                     <input type="text" id="new-name" placeholder="Item Name" class="p-3 bg-gray-50 border border-gray-200 rounded-lg w-full text-sm">
                     <div class="flex gap-1 overflow-x-auto pb-1" id="store-tags">
@@ -59,11 +58,12 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'vGroceries_matthew_v8_final';
+        const STORAGE_KEY = 'vGroceries_matthew_v9_unlimited';
         let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentFilter = 'All';
         let deleteMode = false;
         let selectedStores = [];
+        let resizedImageData = null;
 
         function toggleStoreTag(btn) {
             const store = btn.innerText.trim();
@@ -76,14 +76,28 @@
             }
         }
 
-        function previewImage(input) {
+        // NEW: Function to shrink the image before saving
+        function processAndPreview(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = e => {
-                    const preview = document.getElementById('preview');
-                    preview.src = e.target.result;
-                    preview.classList.remove('hidden');
-                    document.getElementById('plus-icon').classList.add('hidden');
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 300; // Small size for app icons
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resizedImageData = canvas.toDataURL('image/jpeg', 0.7); // 70% quality
+                        
+                        const preview = document.getElementById('preview');
+                        preview.src = resizedImageData;
+                        preview.classList.remove('hidden');
+                        document.getElementById('plus-icon').classList.add('hidden');
+                    };
+                    img.src = e.target.result;
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -92,40 +106,41 @@
         function saveItem() {
             const nameInput = document.getElementById('new-name');
             const name = nameInput.value.trim();
-            const previewImg = document.getElementById('preview');
-            const img = previewImg.classList.contains('hidden') ? null : previewImg.src;
             
-            if (!name) return alert("Please enter an item name!");
-            if (selectedStores.length === 0) return alert("Select at least one store!");
+            if (!name) return alert("Please enter a name!");
+            if (selectedStores.length === 0) return alert("Pick a store!");
             
             items.push({
                 id: Date.now(),
                 name: name,
                 stores: [...selectedStores],
-                img: img || 'https://placehold.co/200x200?text=No+Photo',
+                img: resizedImageData || 'https://placehold.co/200x200?text=No+Photo',
                 needed: true 
             });
             
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-            resetForm();
-            render();
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+                resetForm();
+                render();
+            } catch (e) {
+                alert("Storage full! Please delete some old items to make room.");
+            }
         }
 
         function resetForm() {
             document.getElementById('new-name').value = '';
-            const preview = document.getElementById('preview');
-            preview.classList.add('hidden');
-            preview.src = '';
+            document.getElementById('preview').classList.add('hidden');
             document.getElementById('plus-icon').classList.remove('hidden');
             document.getElementById('new-photo').value = '';
             document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('store-pill-selected'));
             selectedStores = [];
+            resizedImageData = null;
         }
 
         function toggleItemState(id) {
             const item = items.find(i => i.id === id);
             if (deleteMode) {
-                if(confirm(`Permanently delete "${item.name}"?`)) {
+                if(confirm(`Delete "${item.name}"?`)) {
                     items = items.filter(i => i.id !== id);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
                     render();
@@ -149,9 +164,8 @@
         function setFilter(f) {
             currentFilter = f;
             document.querySelectorAll('.nav-btn').forEach(b => {
-                const isActive = b.innerText.trim() === f;
-                b.classList.toggle('active-tab', isActive);
-                b.classList.toggle('text-gray-400', !isActive);
+                b.classList.toggle('active-tab', b.innerText.trim() === f);
+                b.classList.toggle('text-gray-400', b.innerText.trim() !== f);
             });
             document.getElementById('view-title').innerText = f;
             render();
@@ -160,7 +174,6 @@
         function render() {
             const grid = document.getElementById('item-grid');
             const emptyState = document.getElementById('empty-state');
-            
             let filtered = items;
             
             if (currentFilter !== 'All') {
@@ -177,7 +190,7 @@
                 emptyState.classList.add('hidden');
                 grid.innerHTML = filtered.map(item => `
                     <div onclick="toggleItemState(${item.id})" class="relative bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all ${!item.needed && currentFilter === 'All' ? 'checked-style border-transparent' : 'border-white'}">
-                        <img src="${item.img}" class="w-full h-32 object-cover" loading="lazy">
+                        <img src="${item.img}" class="w-full h-32 object-cover">
                         <div class="p-3">
                             <p class="font-bold text-[11px] truncate uppercase tracking-tighter text-gray-800">${item.name}</p>
                             <div class="flex gap-1 mt-1">
