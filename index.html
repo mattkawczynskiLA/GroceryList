@@ -6,115 +6,92 @@
     <title>Visual Grocery Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .checked-style { opacity: 0.3; filter: grayscale(100%); }
+        .checked-style { opacity: 0.2; filter: grayscale(100%); }
         .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
-        .store-pill-selected { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
+        .store-pill-selected { background-color: #6366f1 !important; color: white !important; }
         #store-nav::-webkit-scrollbar { display: none; }
-        input[type="text"] { font-size: 16px !important; appearance: none; }
-        .modal { background: rgba(0,0,0,0.85); display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        /* Force buttons to be interactive */
-        button, .tag-pill, #new-photo { cursor: pointer; pointer-events: auto !important; position: relative; }
+        .tap-target { min-height: 44px; min-width: 44px; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen pb-32 font-sans">
+<body class="bg-gray-100 min-h-screen pb-40 font-sans">
 
-    <div class="sticky top-0 bg-white shadow-md z-[100]">
+    <div class="sticky top-0 bg-white shadow-md z-50">
         <div class="flex overflow-x-auto p-2 space-x-4 border-b" id="store-nav">
-            <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-2 font-bold whitespace-nowrap text-sm">All Items</button>
-            <button onclick="setFilter('Costco')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Costco</button>
-            <button onclick="setFilter('Whole Foods')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Whole Foods</button>
-            <button onclick="setFilter('Trader Joe\'s')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Trader Joe's</button>
+            <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-3 font-bold whitespace-nowrap text-sm tap-target">All Items</button>
+            <button onclick="setFilter('Costco')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm tap-target">Costco</button>
+            <button onclick="setFilter('Whole Foods')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm tap-target">Whole Foods</button>
+            <button onclick="setFilter('Trader Joe\'s')" class="nav-btn px-4 py-3 font-bold whitespace-nowrap text-gray-400 text-sm tap-target">Trader Joe's</button>
         </div>
     </div>
 
-    <div class="p-4 bg-white mb-4 shadow-sm relative z-[50]">
-        <h2 class="text-xs font-black uppercase text-gray-500 tracking-widest mb-3">Add New Item</h2>
-        <div class="flex flex-col gap-3">
-            <div class="flex gap-2">
-                <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300">
-                    <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-30" onchange="processAndPreview(this, 'preview', 'plus-icon')">
-                    <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover">
-                    <span id="plus-icon" class="text-3xl text-gray-400">+</span>
-                </div>
-                <div class="flex-1 flex flex-col gap-2">
-                    <input type="text" id="new-name" placeholder="Item Name" class="p-3 bg-gray-50 border border-gray-200 rounded-lg w-full text-sm">
-                    <div class="flex gap-1 overflow-x-auto pb-1" id="store-tags-container">
-                        <button type="button" onclick="toggleTag(this, 'add')" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white">Costco</button>
-                        <button type="button" onclick="toggleTag(this, 'add')" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white">Whole Foods</button>
-                        <button type="button" onclick="toggleTag(this, 'add')" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white">Trader Joe's</button>
+    <div class="p-4">
+        <div class="bg-white p-4 rounded-2xl shadow-sm mb-6 border border-gray-200">
+            <h2 id="form-title" class="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-3">Add New Item</h2>
+            <div class="flex flex-col gap-4">
+                <div class="flex gap-3">
+                    <div class="w-20 h-20 bg-gray-50 rounded-xl flex items-center justify-center relative border-2 border-dashed border-gray-200 overflow-hidden">
+                        <input type="file" id="file-input" accept="image/*" class="absolute inset-0 opacity-0 z-20" onchange="handleImage(this)">
+                        <img id="form-preview" class="hidden absolute inset-0 w-full h-full object-cover">
+                        <span id="form-icon" class="text-2xl text-gray-300">+</span>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-2">
+                        <input type="text" id="item-name" placeholder="Item Name" class="w-full p-3 bg-gray-50 rounded-lg text-sm border border-gray-100">
+                        <div class="flex gap-1 overflow-x-auto pb-1" id="tag-container">
+                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white tap-target">Costco</button>
+                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white tap-target">Whole Foods</button>
+                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white tap-target">Trader Joe's</button>
+                        </div>
                     </div>
                 </div>
+                <div class="flex gap-2">
+                    <button id="save-btn" onclick="saveItem()" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-xl text-xs uppercase shadow-lg active:scale-95 transition-transform">Save to Library</button>
+                    <button id="cancel-edit" onclick="resetForm()" class="hidden bg-gray-200 text-gray-600 font-black px-4 rounded-xl text-xs uppercase">Cancel</button>
+                </div>
             </div>
-            <button type="button" onclick="saveItem()" class="bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg uppercase tracking-tight text-sm w-full">Save to Library</button>
         </div>
-    </div>
 
-    <div class="px-4 relative z-[10]">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="font-black text-gray-800 uppercase text-xs tracking-tighter" id="view-title">All Items</h2>
-            <button onclick="toggleEditMode()" id="edit-btn" class="text-[10px] font-black uppercase border border-indigo-200 text-indigo-600 px-3 py-1 rounded-full bg-white">Edit Library</button>
+        <div class="flex justify-between items-center mb-4 px-1">
+            <h2 id="view-title" class="font-black text-gray-800 uppercase text-[10px] tracking-widest">All Items</h2>
         </div>
-        <div id="empty-state" class="hidden text-center py-10 text-gray-400 italic text-sm">No items here!</div>
+
         <div class="grid grid-cols-2 gap-3" id="item-grid"></div>
     </div>
 
-    <div id="editModal" class="modal">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm flex flex-col gap-4">
-            <h3 class="font-black uppercase text-xs">Edit Item</h3>
-            <input type="text" id="edit-name" class="p-3 bg-gray-100 border rounded-lg w-full text-sm">
-            <div class="flex gap-1 flex-wrap" id="edit-store-tags">
-                <button onclick="toggleTag(this, 'edit')" class="edit-tag border px-3 py-1 rounded-full text-[10px] font-bold uppercase">Costco</button>
-                <button onclick="toggleTag(this, 'edit')" class="edit-tag border px-3 py-1 rounded-full text-[10px] font-bold uppercase">Whole Foods</button>
-                <button onclick="toggleTag(this, 'edit')" class="edit-tag border px-3 py-1 rounded-full text-[10px] font-bold uppercase">Trader Joe's</button>
-            </div>
-            <div class="flex gap-2 mt-4">
-                <button onclick="closeModal()" class="flex-1 bg-gray-200 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
-                <button onclick="applyEdits()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold text-xs uppercase">Save Changes</button>
-            </div>
-            <button onclick="deleteCurrentItem()" class="text-red-500 font-bold text-[10px] uppercase mt-2">Delete Forever</button>
-        </div>
-    </div>
-
     <script>
-        const STORAGE_KEY = 'vGroceries_matthew_v11_fixed';
-        let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const DB_NAME = 'vGroceries_Final_Stable';
+        let items = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         let currentFilter = 'All';
-        let editModeActive = false;
-        let selectedAddStores = [];
-        let selectedEditStores = [];
-        let resizedImageData = null;
-        let itemToEditId = null;
+        let selectedStores = [];
+        let currentImageData = null;
+        let editingId = null;
 
-        function toggleTag(btn, mode) {
+        function toggleTag(btn) {
             const store = btn.innerText.trim();
-            const list = mode === 'add' ? selectedAddStores : selectedEditStores;
-            const index = list.indexOf(store);
-            if (index > -1) {
-                list.splice(index, 1);
+            if (selectedStores.includes(store)) {
+                selectedStores = selectedStores.filter(s => s !== store);
                 btn.classList.remove('store-pill-selected');
             } else {
-                list.push(store);
+                selectedStores.push(store);
                 btn.classList.add('store-pill-selected');
             }
         }
 
-        function processAndPreview(input, imgId, iconId) {
+        function handleImage(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 300;
-                        const scale = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
+                        const size = 300;
+                        const scale = size / Math.max(img.width, img.height);
+                        canvas.width = img.width * scale;
                         canvas.height = img.height * scale;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resizedImageData = canvas.toDataURL('image/jpeg', 0.6);
-                        document.getElementById(imgId).src = resizedImageData;
-                        document.getElementById(imgId).classList.remove('hidden');
-                        document.getElementById(iconId).classList.add('hidden');
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        currentImageData = canvas.toDataURL('image/jpeg', 0.7);
+                        document.getElementById('form-preview').src = currentImageData;
+                        document.getElementById('form-preview').classList.remove('hidden');
+                        document.getElementById('form-icon').classList.add('hidden');
                     };
                     img.src = e.target.result;
                 };
@@ -123,68 +100,107 @@
         }
 
         function saveItem() {
-            const name = document.getElementById('new-name').value.trim();
-            if (!name || selectedAddStores.length === 0) return alert("Enter name and select store!");
-            items.push({ id: Date.now(), name, stores: [...selectedAddStores], img: resizedImageData || 'https://placehold.co/200x200?text=No+Photo', needed: true });
-            saveAndRender();
+            const name = document.getElementById('item-name').value.trim();
+            if (!name || selectedStores.length === 0) return alert("Missing name or store!");
+
+            if (editingId) {
+                const idx = items.findIndex(i => i.id === editingId);
+                items[idx].name = name;
+                items[idx].stores = [...selectedStores];
+                if (currentImageData) items[idx].img = currentImageData;
+            } else {
+                items.push({
+                    id: Date.now(),
+                    name,
+                    stores: [...selectedStores],
+                    img: currentImageData || 'https://placehold.co/200x200?text=No+Photo',
+                    needed: true
+                });
+            }
+
+            localStorage.setItem(DB_NAME, JSON.stringify(items));
             resetForm();
+            render();
         }
 
         function resetForm() {
-            document.getElementById('new-name').value = '';
-            document.getElementById('preview').classList.add('hidden');
-            document.getElementById('plus-icon').classList.remove('hidden');
-            document.querySelectorAll('#store-tags-container .tag-pill').forEach(p => p.classList.remove('store-pill-selected'));
-            selectedAddStores = [];
-            resizedImageData = null;
+            editingId = null;
+            selectedStores = [];
+            currentImageData = null;
+            document.getElementById('item-name').value = '';
+            document.getElementById('form-preview').classList.add('hidden');
+            document.getElementById('form-icon').classList.remove('hidden');
+            document.getElementById('form-title').innerText = "Add New Item";
+            document.getElementById('save-btn').innerText = "Save to Library";
+            document.getElementById('cancel-edit').classList.add('hidden');
+            document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('store-pill-selected'));
+            document.getElementById('file-input').value = '';
         }
 
-        function toggleEditMode() {
-            editModeActive = !editModeActive;
-            const btn = document.getElementById('edit-btn');
-            btn.innerText = editModeActive ? "Done" : "Edit Library";
-            btn.classList.toggle('bg-indigo-600', editModeActive);
-            btn.classList.toggle('text-white', editModeActive);
-            render();
-        }
-
-        function handleItemTap(id) {
+        function editItem(id) {
             const item = items.find(i => i.id === id);
-            if (editModeActive) {
-                itemToEditId = item.id;
-                document.getElementById('edit-name').value = item.name;
-                selectedEditStores = [...item.stores];
-                document.querySelectorAll('.edit-tag').forEach(btn => {
-                    btn.classList.toggle('store-pill-selected', selectedEditStores.includes(btn.innerText.trim()));
-                });
-                document.getElementById('editModal').style.display = 'flex';
-            } else {
-                item.needed = !item.needed;
-                saveAndRender();
+            editingId = id;
+            document.getElementById('item-name').value = item.name;
+            document.getElementById('form-title').innerText = "Editing: " + item.name;
+            document.getElementById('save-btn').innerText = "Update Item";
+            document.getElementById('cancel-edit').classList.remove('hidden');
+            
+            selectedStores = [...item.stores];
+            document.querySelectorAll('.tag-pill').forEach(btn => {
+                btn.classList.toggle('store-pill-selected', selectedStores.includes(btn.innerText.trim()));
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteItem(id) {
+            if (confirm("Delete this item forever?")) {
+                items = items.filter(i => i.id !== id);
+                localStorage.setItem(DB_NAME, JSON.stringify(items));
+                render();
             }
         }
 
-        function applyEdits() {
-            const item = items.find(i => i.id === itemToEditId);
-            item.name = document.getElementById('edit-name').value.trim();
-            item.stores = [...selectedEditStores];
-            saveAndRender();
-            closeModal();
-        }
-
-        function deleteCurrentItem() {
-            if(confirm("Delete forever?")) {
-                items = items.filter(i => i.id !== itemToEditId);
-                saveAndRender();
-                closeModal();
-            }
-        }
-
-        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
-
-        function saveAndRender() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+        function toggleNeeded(id) {
+            const item = items.find(i => i.id === id);
+            item.needed = !item.needed;
+            localStorage.setItem(DB_NAME, JSON.stringify(items));
             render();
         }
 
-        function
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                const active = b.innerText.trim() === f;
+                b.classList.toggle('active-tab', active);
+                b.classList.toggle('text-gray-400', !active);
+            });
+            document.getElementById('view-title').innerText = f;
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('item-grid');
+            let filtered = items;
+            if (currentFilter !== 'All') {
+                filtered = items.filter(i => i.stores.includes(currentFilter) && i.needed);
+            }
+
+            grid.innerHTML = filtered.map(item => `
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm border-2 border-white relative ${!item.needed && currentFilter === 'All' ? 'checked-style' : ''}">
+                    <img src="${item.img}" class="w-full h-32 object-cover" onclick="toggleNeeded(${item.id})">
+                    <div class="p-3">
+                        <p class="font-bold text-[11px] uppercase truncate mb-2">${item.name}</p>
+                        <div class="flex gap-2">
+                            <button onclick="editItem(${item.id})" class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">EDIT</button>
+                            <button onclick="deleteItem(${item.id})" class="text-[9px] font-bold text-red-400 bg-red-50 px-2 py-1 rounded">DEL</button>
+                        </div>
+                    </div>
+                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center text-4xl" onclick="toggleNeeded(${item.id})">✓</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        render();
+    </script>
+</body>
+</html>
