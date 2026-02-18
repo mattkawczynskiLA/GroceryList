@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Visual Grocery Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .checked-style { opacity: 0.3; filter: grayscale(100%); }
+        .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
+        .store-pill-selected { background-color: #6366f1; color: white; border-color: #6366f1; }
+        #store-nav::-webkit-scrollbar { display: none; }
+        /* Prevent zoom on input for iOS */
+        input[type="text"] { font-size: 16px !important; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-32 font-sans">
+
+    <div class="sticky top-0 bg-white shadow-md z-30">
+        <div class="flex overflow-x-auto p-2 space-x-4 border-b" id="store-nav">
+            <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-2 font-bold whitespace-nowrap text-sm">All Items</button>
+            <button onclick="setFilter('Costco')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Costco</button>
+            <button onclick="setFilter('Whole Foods')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Whole Foods</button>
+            <button onclick="setFilter('Trader Joe\'s')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Trader Joe's</button>
+        </div>
+    </div>
+
+    <div class="p-4 bg-white mb-4 shadow-sm">
+        <details class="group">
+            <summary class="list-none flex justify-between items-center cursor-pointer">
+                <h2 class="text-xs font-black uppercase text-gray-500 tracking-widest">+ Add New Item</h2>
+                <span class="group-open:rotate-180 transition-transform text-gray-400 text-xs">▼</span>
+            </summary>
+            <div class="flex flex-col gap-3 mt-4">
+                <div class="flex gap-2">
+                    <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300">
+                        <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-10" onchange="previewImage(this)">
+                        <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover">
+                        <span id="plus-icon" class="text-3xl text-gray-400">+</span>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-2">
+                        <input type="text" id="new-name" placeholder="Item Name" class="p-3 bg-gray-50 border-none rounded-lg w-full text-sm">
+                        <div class="flex gap-1 overflow-x-auto pb-1" id="store-tags">
+                            <button onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Costco</button>
+                            <button onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Whole Foods</button>
+                            <button onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Trader Joe's</button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveItem()" class="bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg uppercase tracking-tight text-sm">Save to Library</button>
+            </div>
+        </details>
+    </div>
+
+    <div class="px-4">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-black text-gray-800 uppercase text-xs tracking-tighter" id="view-title">All Items</h2>
+            <button onclick="toggleDeleteMode()" id="edit-btn" class="text-[10px] font-black uppercase border border-indigo-200 text-indigo-600 px-3 py-1 rounded-full">Edit</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3" id="item-grid"></div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'vGroceries_matthew_vFinal_02';
+        let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let currentFilter = 'All';
+        let deleteMode = false;
+        let selectedStores = [];
+
+        function toggleStoreTag(btn) {
+            const store = btn.innerText;
+            if (selectedStores.includes(store)) {
+                selectedStores = selectedStores.filter(s => s !== store);
+                btn.classList.remove('store-pill-selected');
+            } else {
+                selectedStores.push(store);
+                btn.classList.add('store-pill-selected');
+            }
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const preview = document.getElementById('preview');
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                    document.getElementById('plus-icon').classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveItem() {
+            const nameInput = document.getElementById('new-name');
+            const name = nameInput.value;
+            const previewImg = document.getElementById('preview');
+            const img = previewImg.classList.contains('hidden') ? null : previewImg.src;
+            
+            if (!name) return alert("Please enter an item name!");
+            
+            items.push({
+                id: Date.now(),
+                name: name,
+                stores: selectedStores.length ? [...selectedStores] : ['Other'],
+                img: img || 'https://placehold.co/200x200?text=No+Photo',
+                needed: true 
+            });
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            resetForm();
+            render();
+        }
+
+        function resetForm() {
+            document.getElementById('new-name').value = '';
+            const preview = document.getElementById('preview');
+            preview.classList.add('hidden');
+            preview.src = '';
+            document.getElementById('plus-icon').classList.remove('hidden');
+            document.getElementById('new-photo').value = '';
+            document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('store-pill-selected'));
+            selectedStores = [];
+        }
+
+        function toggleItemState(id) {
+            if (deleteMode) {
+                if(confirm("Permanently delete this item from your library?")) {
+                    items = items.filter(i => i.id !== id);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+                    render();
+                }
+                return;
+            }
+            const item = items.find(i => i.id === id);
+            item.needed = !item.needed;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            render();
+        }
+
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            const btn = document.getElementById('edit-btn');
+            btn.innerText = deleteMode ? "Done" : "Edit";
+            btn.classList.toggle('bg-red-500');
+            btn.classList.toggle('text-white');
+            render();
+        }
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.toggle('active-tab', b.innerText === f);
+                b.classList.toggle('text-gray-400', b.innerText !== f);
+            });
+            document.getElementById('view-title').innerText = f;
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('item-grid');
+            let filtered = items;
+            
+            if (currentFilter !== 'All') {
+                filtered = items.filter(i => i.stores.includes(currentFilter) && i.needed === true);
+            }
+            
+            grid.innerHTML = filtered.map(item => `
+                <div onclick="toggleItemState(${item.id})" class="relative bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all ${!item.needed && currentFilter === 'All' ? 'checked-style border-transparent' : 'border-white'}">
+                    <img src="${item.img}" class="w-full h-32 object-cover" loading="lazy">
+                    <div class="p-3">
+                        <p class="font-bold text-[11px] truncate uppercase tracking-tighter text-gray-800">${item.name}</p>
+                        <div class="flex gap-1 mt-1">
+                             ${item.stores.map(s => `<span class="text-[7px] bg-gray-100 text-gray-500 px-1 rounded font-bold">${s.charAt(0)}</span>`).join('')}
+                        </div>
+                    </div>
+                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center font-black text-green-600 text-3xl">✓</div>' : ''}
+                    ${deleteMode ? '<div class="absolute inset-0 bg-red-600/90 flex items-center justify-center text-white font-black text-[10px]">TAP TO DELETE</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        render();
+    </script>
+</body>
+</html>
