@@ -10,7 +10,9 @@
         .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
         .store-pill-selected { background-color: #6366f1 !important; color: white !important; }
         #store-nav::-webkit-scrollbar { display: none; }
-        .tap-target { min-height: 44px; min-width: 44px; }
+        /* This fix allows you to click "through" the checkmark to uncheck it */
+        .checkmark-overlay { pointer-events: none; } 
+        .tap-target { min-height: 44px; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-40 font-sans">
@@ -37,14 +39,14 @@
                     <div class="flex-1 flex flex-col gap-2">
                         <input type="text" id="item-name" placeholder="Item Name" class="w-full p-3 bg-gray-50 rounded-lg text-sm border border-gray-100">
                         <div class="flex gap-1 overflow-x-auto pb-1" id="tag-container">
-                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white tap-target">Costco</button>
-                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white tap-target">Whole Foods</button>
-                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white tap-target">Trader Joe's</button>
+                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white">Costco</button>
+                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white">Whole Foods</button>
+                            <button onclick="toggleTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[9px] font-bold uppercase bg-white">Trader Joe's</button>
                         </div>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button id="save-btn" onclick="saveItem()" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-xl text-xs uppercase shadow-lg active:scale-95 transition-transform">Save to Library</button>
+                    <button id="save-btn" onclick="saveItem()" class="flex-1 bg-indigo-600 text-white font-black py-4 rounded-xl text-xs uppercase shadow-lg">Save to Library</button>
                     <button id="cancel-edit" onclick="resetForm()" class="hidden bg-gray-200 text-gray-600 font-black px-4 rounded-xl text-xs uppercase">Cancel</button>
                 </div>
             </div>
@@ -58,7 +60,7 @@
     </div>
 
     <script>
-        const DB_NAME = 'vGroceries_Final_Stable';
+        const DB_NAME = 'vGroceries_Final_Stable_v2';
         let items = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         let currentFilter = 'All';
         let selectedStores = [];
@@ -191,11 +193,11 @@
                     <div class="p-3">
                         <p class="font-bold text-[11px] uppercase truncate mb-2">${item.name}</p>
                         <div class="flex gap-2">
-                            <button onclick="editItem(${item.id})" class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">EDIT</button>
-                            <button onclick="deleteItem(${item.id})" class="text-[9px] font-bold text-red-400 bg-red-50 px-2 py-1 rounded">DEL</button>
+                            <button onclick="editItem(${item.id})" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-2 rounded">EDIT</button>
+                            <button onclick="deleteItem(${item.id})" class="text-[10px] font-bold text-red-400 bg-red-50 px-3 py-2 rounded">DEL</button>
                         </div>
                     </div>
-                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center text-4xl" onclick="toggleNeeded(${item.id})">✓</div>' : ''}
+                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center text-4xl checkmark-overlay">✓</div>' : ''}
                 </div>
             `).join('');
         }
