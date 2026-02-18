@@ -7,10 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .checked-style { opacity: 0.2; filter: grayscale(100%); }
-        .active-tab { background-color: #6366f1 !important; color: white !important; }
+        .active-tab { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         .store-pill-selected { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         #store-nav::-webkit-scrollbar { display: none; }
-        /* Force buttons to be interactive and large */
         button, label, input { min-height: 48px; touch-action: manipulation; }
         .item-card { -webkit-tap-highlight-color: transparent; }
     </style>
@@ -36,7 +35,7 @@
                         <span id="form-icon" class="text-3xl font-bold text-gray-400">+</span>
                     </label>
                     <div class="flex-1">
-                        <input type="text" id="item-name" placeholder="Item Name..." class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg mb-2 focus:border-indigo-500 outline-none">
+                        <input type="text" id="item-name" placeholder="Item Name..." class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg mb-2 outline-none">
                         <div class="flex gap-1 overflow-x-auto pb-1">
                             <button onclick="toggleTag(this)" class="tag-pill border-2 border-gray-200 px-2 py-1 rounded-md text-[9px] font-black uppercase bg-white">Costco</button>
                             <button onclick="toggleTag(this)" class="tag-pill border-2 border-gray-200 px-2 py-1 rounded-md text-[9px] font-black uppercase bg-white">Whole Foods</button>
@@ -44,11 +43,11 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="saveItem()" class="bg-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest shadow-md">Save to Library</button>
+                <button onclick="saveItem()" class="bg-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest">Save to Library</button>
             </div>
         </div>
 
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-4 px-1">
             <h2 id="view-title" class="font-black uppercase text-xs tracking-widest text-indigo-900">All Items</h2>
             <button onclick="toggleSortMode()" id="sort-btn" class="text-[10px] font-bold uppercase border-2 border-indigo-200 px-4 py-2 rounded-full bg-white text-indigo-600">Sort List</button>
         </div>
@@ -57,7 +56,7 @@
     </div>
 
     <script>
-        const DB_NAME = 'vGroceries_Rugged_v1';
+        const DB_NAME = 'vGroceries_SmartFilter_v1';
         let items = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         let currentFilter = 'All';
         let selectedStores = [];
@@ -66,8 +65,9 @@
 
         function toggleTag(btn) {
             const store = btn.innerText.trim();
-            if (selectedStores.includes(store)) {
-                selectedStores = selectedStores.filter(s => s !== store);
+            const index = selectedStores.indexOf(store);
+            if (index > -1) {
+                selectedStores.splice(index, 1);
                 btn.classList.remove('store-pill-selected');
             } else {
                 selectedStores.push(store);
@@ -99,7 +99,8 @@
 
         function saveItem() {
             const name = document.getElementById('item-name').value.trim();
-            if (!name || selectedStores.length === 0) return alert("Add a name and pick a store!");
+            if (!name || selectedStores.length === 0) return alert("Missing name or store!");
+            // IMPORTANT: We save the stores exactly as they appear on buttons
             items.unshift({ id: Date.now(), name, stores: [...selectedStores], img: currentImageData || 'https://placehold.co/200x200?text=No+Photo', needed: true });
             save(); resetForm();
         }
@@ -130,7 +131,7 @@
         function setFilter(f) {
             currentFilter = f;
             document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.toggle('active-tab', b.innerText.trim() === f);
+                b.classList.toggle('active-tab', b.innerText.trim().toLowerCase() === f.toLowerCase());
             });
             document.getElementById('view-title').innerText = f;
             render();
@@ -150,32 +151,15 @@
         function render() {
             const grid = document.getElementById('item-grid');
             let filtered = items;
+            
+            // SMART FILTER: Matches store name regardless of case or hidden characters
             if (currentFilter !== 'All') {
-                filtered = items.filter(i => i.stores.includes(currentFilter) && i.needed);
+                filtered = items.filter(item => {
+                    const storeMatch = item.stores.some(s => s.trim().toLowerCase() === currentFilter.trim().toLowerCase());
+                    return storeMatch && item.needed;
+                });
             }
 
             grid.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-xl overflow-hidden shadow-md border-2 border-white relative item-card ${!item.needed && currentFilter === 'All' ? 'checked-style' : ''}">
-                    <img src="${item.img}" class="w-full h-32 object-cover" onclick="toggleNeeded(${item.id})">
-                    <div class="p-3">
-                        <p class="font-black text-[10px] uppercase truncate mb-1">${item.name}</p>
-                        <div class="flex flex-wrap gap-1 mb-2">
-                            ${item.stores.map(s => `<span class="text-[7px] bg-indigo-50 text-indigo-600 px-1 py-0.5 rounded font-bold uppercase border border-indigo-100">${s}</span>`).join('')}
-                        </div>
-                        <div class="flex gap-1">
-                            ${isSortMode ? `
-                                <button onclick="moveItem(${item.id}, 'up')" class="bg-gray-200 flex-1 rounded font-bold">↑</button>
-                                <button onclick="moveItem(${item.id}, 'down')" class="bg-gray-200 flex-1 rounded font-bold">↓</button>
-                            ` : `
-                                <button onclick="if(confirm('Delete?')){items=items.filter(i=>i.id!=${item.id});save();}" class="text-[9px] font-bold text-red-500 bg-red-50 w-full py-2 rounded border border-red-100">DELETE</button>
-                            `}
-                        </div>
-                    </div>
-                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 flex items-center justify-center text-4xl pointer-events-none">✓</div>' : ''}
-                </div>
-            `).join('');
-        }
-        render();
-    </script>
-</body>
-</html>
+                <div class="bg-white rounded-xl overflow-hidden shadow-md border-2 border-white relative ${!item.needed && currentFilter === 'All' ? 'checked-style' : ''}">
+                    <img
