@@ -8,14 +8,16 @@
     <style>
         .checked-style { opacity: 0.3; filter: grayscale(100%); }
         .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
-        .store-pill-selected { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .store-pill-selected { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         #store-nav::-webkit-scrollbar { display: none; }
-        input[type="text"] { font-size: 16px !important; }
+        input[type="text"] { font-size: 16px !important; appearance: none; }
+        /* Ensure buttons are always clickable */
+        button, input, select, .tag-pill { pointer-events: auto !important; position: relative; z-index: 10; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-32 font-sans">
 
-    <div class="sticky top-0 bg-white shadow-md z-30">
+    <div class="sticky top-0 bg-white shadow-md z-50">
         <div class="flex overflow-x-auto p-2 space-x-4 border-b" id="store-nav">
             <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-2 font-bold whitespace-nowrap text-sm">All Items</button>
             <button onclick="setFilter('Costco')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Costco</button>
@@ -24,44 +26,40 @@
         </div>
     </div>
 
-    <div class="p-4 bg-white mb-4 shadow-sm">
-        <details class="group">
-            <summary class="list-none flex justify-between items-center cursor-pointer">
-                <h2 class="text-xs font-black uppercase text-gray-500 tracking-widest">+ Add New Item</h2>
-                <span class="group-open:rotate-180 transition-transform text-gray-400 text-xs">▼</span>
-            </summary>
-            <div class="flex flex-col gap-3 mt-4">
-                <div class="flex gap-2">
-                    <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300">
-                        <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-10" onchange="previewImage(this)">
-                        <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover">
-                        <span id="plus-icon" class="text-3xl text-gray-400">+</span>
-                    </div>
-                    <div class="flex-1 flex flex-col gap-2">
-                        <input type="text" id="new-name" placeholder="Item Name" class="p-3 bg-gray-50 border-none rounded-lg w-full text-sm">
-                        <div class="flex gap-1 overflow-x-auto pb-1" id="store-tags">
-                            <button onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Costco</button>
-                            <button onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Whole Foods</button>
-                            <button onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Trader Joe's</button>
-                        </div>
+    <div class="p-4 bg-white mb-4 shadow-sm relative z-40">
+        <h2 class="text-xs font-black uppercase text-gray-500 tracking-widest mb-3">Add New Item</h2>
+        <div class="flex flex-col gap-3">
+            <div class="flex gap-2">
+                <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300">
+                    <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-20" onchange="previewImage(this)">
+                    <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover">
+                    <span id="plus-icon" class="text-3xl text-gray-400">+</span>
+                </div>
+                
+                <div class="flex-1 flex flex-col gap-2">
+                    <input type="text" id="new-name" placeholder="Item Name" class="p-3 bg-gray-50 border border-gray-200 rounded-lg w-full text-sm">
+                    <div class="flex gap-1 overflow-x-auto pb-1" id="store-tags">
+                        <button type="button" onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white">Costco</button>
+                        <button type="button" onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white">Whole Foods</button>
+                        <button type="button" onclick="toggleStoreTag(this)" class="tag-pill border border-gray-200 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white">Trader Joe's</button>
                     </div>
                 </div>
-                <button onclick="saveItem()" class="bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg uppercase tracking-tight text-sm">Save to Library</button>
             </div>
-        </details>
+            <button type="button" onclick="saveItem()" class="bg-indigo-600 text-white font-black py-3 rounded-xl shadow-lg uppercase tracking-tight text-sm w-full">Save to Library</button>
+        </div>
     </div>
 
-    <div class="px-4">
+    <div class="px-4 relative z-10">
         <div class="flex justify-between items-center mb-4">
             <h2 class="font-black text-gray-800 uppercase text-xs tracking-tighter" id="view-title">All Items</h2>
-            <button onclick="toggleDeleteMode()" id="edit-btn" class="text-[10px] font-black uppercase border border-indigo-200 text-indigo-600 px-3 py-1 rounded-full">Edit</button>
+            <button onclick="toggleDeleteMode()" id="edit-btn" class="text-[10px] font-black uppercase border border-indigo-200 text-indigo-600 px-3 py-1 rounded-full bg-white">Edit</button>
         </div>
         <div id="empty-state" class="hidden text-center py-10 text-gray-400 italic text-sm">No items needed here!</div>
         <div class="grid grid-cols-2 gap-3" id="item-grid"></div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'vGroceries_matthew_v7_fixed';
+        const STORAGE_KEY = 'vGroceries_matthew_v8_final';
         let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentFilter = 'All';
         let deleteMode = false;
@@ -127,4 +125,55 @@
         function toggleItemState(id) {
             const item = items.find(i => i.id === id);
             if (deleteMode) {
-                if(confirm(`Permanently delete "${item.name}"?`))
+                if(confirm(`Permanently delete "${item.name}"?`)) {
+                    items = items.filter(i => i.id !== id);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+                    render();
+                }
+                return;
+            }
+            item.needed = !item.needed;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            render();
+        }
+
+        function toggleDeleteMode() {
+            deleteMode = !deleteMode;
+            const btn = document.getElementById('edit-btn');
+            btn.innerText = deleteMode ? "Done" : "Edit";
+            btn.classList.toggle('bg-red-500');
+            btn.classList.toggle('text-white');
+            render();
+        }
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                const isActive = b.innerText.trim() === f;
+                b.classList.toggle('active-tab', isActive);
+                b.classList.toggle('text-gray-400', !isActive);
+            });
+            document.getElementById('view-title').innerText = f;
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('item-grid');
+            const emptyState = document.getElementById('empty-state');
+            
+            let filtered = items;
+            
+            if (currentFilter !== 'All') {
+                filtered = items.filter(i => 
+                    i.stores.map(s => s.toLowerCase()).includes(currentFilter.toLowerCase()) && 
+                    i.needed === true
+                );
+            }
+            
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.innerHTML = '';
+            } else {
+                emptyState.classList.add('hidden');
+                grid.innerHTML = filtered.map(item => `
+                    <div onclick="toggleItemState(${item.id})" class="relative bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all ${!item.needed && currentFilter === 'All' ? 'checked-
