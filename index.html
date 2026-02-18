@@ -56,18 +56,19 @@
             <h2 class="font-black text-gray-800 uppercase text-xs tracking-tighter" id="view-title">All Items</h2>
             <button onclick="toggleDeleteMode()" id="edit-btn" class="text-[10px] font-black uppercase border border-indigo-200 text-indigo-600 px-3 py-1 rounded-full">Edit</button>
         </div>
+        <div id="empty-state" class="hidden text-center py-10 text-gray-400 italic text-sm">No items needed here!</div>
         <div class="grid grid-cols-2 gap-3" id="item-grid"></div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'vGroceries_matthew_v6';
+        const STORAGE_KEY = 'vGroceries_matthew_v7_fixed';
         let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentFilter = 'All';
         let deleteMode = false;
         let selectedStores = [];
 
         function toggleStoreTag(btn) {
-            const store = btn.innerText;
+            const store = btn.innerText.trim();
             if (selectedStores.includes(store)) {
                 selectedStores = selectedStores.filter(s => s !== store);
                 btn.classList.remove('store-pill-selected');
@@ -92,16 +93,17 @@
 
         function saveItem() {
             const nameInput = document.getElementById('new-name');
-            const name = nameInput.value;
+            const name = nameInput.value.trim();
             const previewImg = document.getElementById('preview');
             const img = previewImg.classList.contains('hidden') ? null : previewImg.src;
             
             if (!name) return alert("Please enter an item name!");
+            if (selectedStores.length === 0) return alert("Select at least one store!");
             
             items.push({
                 id: Date.now(),
                 name: name,
-                stores: selectedStores.length ? [...selectedStores] : ['Other'],
+                stores: [...selectedStores],
                 img: img || 'https://placehold.co/200x200?text=No+Photo',
                 needed: true 
             });
@@ -125,62 +127,4 @@
         function toggleItemState(id) {
             const item = items.find(i => i.id === id);
             if (deleteMode) {
-                if(confirm(`Permanently delete "${item.name}"?`)) {
-                    items = items.filter(i => i.id !== id);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-                    render();
-                }
-                return;
-            }
-            item.needed = !item.needed;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-            render();
-        }
-
-        function toggleDeleteMode() {
-            deleteMode = !deleteMode;
-            const btn = document.getElementById('edit-btn');
-            btn.innerText = deleteMode ? "Done" : "Edit";
-            btn.classList.toggle('bg-red-500');
-            btn.classList.toggle('text-white');
-            render();
-        }
-
-        function setFilter(f) {
-            currentFilter = f;
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.toggle('active-tab', b.innerText === f);
-                b.classList.toggle('text-gray-400', b.innerText !== f);
-            });
-            document.getElementById('view-title').innerText = f;
-            render();
-        }
-
-        function render() {
-            const grid = document.getElementById('item-grid');
-            let filtered = items;
-            
-            // Logically: If in a store tab, only show items tagged for that store AND currently "needed"
-            if (currentFilter !== 'All') {
-                filtered = items.filter(i => i.stores.includes(currentFilter) && i.needed === true);
-            }
-            
-            grid.innerHTML = filtered.map(item => `
-                <div onclick="toggleItemState(${item.id})" class="relative bg-white rounded-2xl overflow-hidden shadow-sm border-2 transition-all ${!item.needed && currentFilter === 'All' ? 'checked-style border-transparent' : 'border-white'}">
-                    <img src="${item.img}" class="w-full h-32 object-cover" loading="lazy">
-                    <div class="p-3">
-                        <p class="font-bold text-[11px] truncate uppercase tracking-tighter text-gray-800">${item.name}</p>
-                        <div class="flex gap-1 mt-1">
-                             ${item.stores.map(s => `<span class="text-[7px] bg-gray-100 text-gray-500 px-1 rounded font-bold">${s.charAt(0)}</span>`).join('')}
-                        </div>
-                    </div>
-                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center font-black text-green-600 text-3xl">✓</div>' : ''}
-                    ${deleteMode ? '<div class="absolute inset-0 bg-red-600/90 flex items-center justify-center text-white font-black text-[10px]">TAP TO DELETE</div>' : ''}
-                </div>
-            `).join('');
-        }
-
-        render();
-    </script>
-</body>
-</html>
+                if(confirm(`Permanently delete "${item.name}"?`))
