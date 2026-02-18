@@ -10,7 +10,6 @@
         .active-tab { border-bottom: 4px solid #6366f1; color: #6366f1; }
         .store-pill-selected { background-color: #6366f1 !important; color: white !important; }
         #store-nav::-webkit-scrollbar { display: none; }
-        /* This fix allows you to click "through" the checkmark to uncheck it */
         .checkmark-overlay { pointer-events: none; } 
         .tap-target { min-height: 44px; }
     </style>
@@ -60,7 +59,7 @@
     </div>
 
     <script>
-        const DB_NAME = 'vGroceries_Final_Stable_v2';
+        const DB_NAME = 'vGroceries_Final_Stable_v3';
         let items = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         let currentFilter = 'All';
         let selectedStores = [];
@@ -112,97 +111,4 @@
                 if (currentImageData) items[idx].img = currentImageData;
             } else {
                 items.push({
-                    id: Date.now(),
-                    name,
-                    stores: [...selectedStores],
-                    img: currentImageData || 'https://placehold.co/200x200?text=No+Photo',
-                    needed: true
-                });
-            }
-
-            localStorage.setItem(DB_NAME, JSON.stringify(items));
-            resetForm();
-            render();
-        }
-
-        function resetForm() {
-            editingId = null;
-            selectedStores = [];
-            currentImageData = null;
-            document.getElementById('item-name').value = '';
-            document.getElementById('form-preview').classList.add('hidden');
-            document.getElementById('form-icon').classList.remove('hidden');
-            document.getElementById('form-title').innerText = "Add New Item";
-            document.getElementById('save-btn').innerText = "Save to Library";
-            document.getElementById('cancel-edit').classList.add('hidden');
-            document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('store-pill-selected'));
-            document.getElementById('file-input').value = '';
-        }
-
-        function editItem(id) {
-            const item = items.find(i => i.id === id);
-            editingId = id;
-            document.getElementById('item-name').value = item.name;
-            document.getElementById('form-title').innerText = "Editing: " + item.name;
-            document.getElementById('save-btn').innerText = "Update Item";
-            document.getElementById('cancel-edit').classList.remove('hidden');
-            
-            selectedStores = [...item.stores];
-            document.querySelectorAll('.tag-pill').forEach(btn => {
-                btn.classList.toggle('store-pill-selected', selectedStores.includes(btn.innerText.trim()));
-            });
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function deleteItem(id) {
-            if (confirm("Delete this item forever?")) {
-                items = items.filter(i => i.id !== id);
-                localStorage.setItem(DB_NAME, JSON.stringify(items));
-                render();
-            }
-        }
-
-        function toggleNeeded(id) {
-            const item = items.find(i => i.id === id);
-            item.needed = !item.needed;
-            localStorage.setItem(DB_NAME, JSON.stringify(items));
-            render();
-        }
-
-        function setFilter(f) {
-            currentFilter = f;
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                const active = b.innerText.trim() === f;
-                b.classList.toggle('active-tab', active);
-                b.classList.toggle('text-gray-400', !active);
-            });
-            document.getElementById('view-title').innerText = f;
-            render();
-        }
-
-        function render() {
-            const grid = document.getElementById('item-grid');
-            let filtered = items;
-            if (currentFilter !== 'All') {
-                filtered = items.filter(i => i.stores.includes(currentFilter) && i.needed);
-            }
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-2xl overflow-hidden shadow-sm border-2 border-white relative ${!item.needed && currentFilter === 'All' ? 'checked-style' : ''}">
-                    <img src="${item.img}" class="w-full h-32 object-cover" onclick="toggleNeeded(${item.id})">
-                    <div class="p-3">
-                        <p class="font-bold text-[11px] uppercase truncate mb-2">${item.name}</p>
-                        <div class="flex gap-2">
-                            <button onclick="editItem(${item.id})" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-2 rounded">EDIT</button>
-                            <button onclick="deleteItem(${item.id})" class="text-[10px] font-bold text-red-400 bg-red-50 px-3 py-2 rounded">DEL</button>
-                        </div>
-                    </div>
-                    ${!item.needed && currentFilter === 'All' ? '<div class="absolute inset-0 bg-white/40 flex items-center justify-center text-4xl checkmark-overlay">✓</div>' : ''}
-                </div>
-            `).join('');
-        }
-
-        render();
-    </script>
-</body>
-</html>
+                    id: Date.
