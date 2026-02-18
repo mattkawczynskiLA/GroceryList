@@ -3,163 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Visual Grocery Pro</title>
+    <title>Grocery List</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .checked-style { opacity: 0.2; filter: grayscale(100%); }
-        .active-tab { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
-        .store-pill-selected { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
+        .checked { opacity: 0.2; filter: grayscale(100%); }
+        .active-tab { background: #6366f1 !important; color: white !important; }
+        .selected-tag { background: #6366f1 !important; color: white !important; }
+        button, input, label { min-height: 44px; touch-action: manipulation; }
         #store-nav::-webkit-scrollbar { display: none; }
-        button, label, input { min-height: 48px; touch-action: manipulation; }
-        .item-card { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen pb-40 font-sans text-gray-900">
+<body class="bg-gray-100 pb-20">
 
-    <div class="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div class="flex overflow-x-auto p-2 gap-2" id="store-nav">
-            <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-2 rounded-lg font-bold whitespace-nowrap text-xs border">All</button>
-            <button onclick="setFilter('Costco')" class="nav-btn px-4 py-2 rounded-lg font-bold whitespace-nowrap text-xs border bg-gray-50">Costco</button>
-            <button onclick="setFilter('Whole Foods')" class="nav-btn px-4 py-2 rounded-lg font-bold whitespace-nowrap text-xs border bg-gray-50">Whole Foods</button>
-            <button onclick="setFilter('Trader Joe\'s')" class="nav-btn px-4 py-2 rounded-lg font-bold whitespace-nowrap text-xs border bg-gray-50">Trader Joe's</button>
-        </div>
+    <div class="sticky top-0 bg-white border-b z-50 flex overflow-x-auto p-2 gap-2" id="store-nav">
+        <button onclick="setTab('All')" class="tab-btn active-tab px-4 py-2 rounded border text-xs font-bold">All</button>
+        <button onclick="setTab('Costco')" class="tab-btn px-4 py-2 rounded border text-xs font-bold bg-gray-50">Costco</button>
+        <button onclick="setTab('Whole Foods')" class="tab-btn px-4 py-2 rounded border text-xs font-bold bg-gray-50">Whole Foods</button>
+        <button onclick="setTab('Trader Joe\'s')" class="tab-btn px-4 py-2 rounded border text-xs font-bold bg-gray-50">Trader Joe's</button>
     </div>
 
     <div class="p-4">
-        <div class="bg-white p-4 rounded-xl border-2 border-gray-200 mb-6">
-            <div class="flex flex-col gap-4">
-                <div class="flex gap-3">
-                    <label class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center relative overflow-hidden border-2 border-gray-300">
-                        <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleImage(this)">
-                        <img id="form-preview" class="hidden absolute inset-0 w-full h-full object-cover">
-                        <span id="form-icon" class="text-3xl font-bold text-gray-400">+</span>
-                    </label>
-                    <div class="flex-1">
-                        <input type="text" id="item-name" placeholder="Item Name..." class="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg mb-2 outline-none">
-                        <div class="flex gap-1 overflow-x-auto pb-1">
-                            <button onclick="toggleTag(this)" class="tag-pill border-2 border-gray-200 px-2 py-1 rounded-md text-[9px] font-black uppercase bg-white">Costco</button>
-                            <button onclick="toggleTag(this)" class="tag-pill border-2 border-gray-200 px-2 py-1 rounded-md text-[9px] font-black uppercase bg-white">Whole Foods</button>
-                            <button onclick="toggleTag(this)" class="tag-pill border-2 border-gray-200 px-2 py-1 rounded-md text-[9px] font-black uppercase bg-white">Trader Joe's</button>
-                        </div>
-                    </div>
-                </div>
-                <button onclick="saveItem()" class="bg-indigo-600 text-white font-black py-4 rounded-xl uppercase tracking-widest">Save to Library</button>
+        <div class="bg-white p-4 rounded-xl shadow-sm mb-6 border">
+            <div class="flex gap-3 mb-4">
+                <label class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center relative overflow-hidden border">
+                    <input type="file" id="pic" accept="image/*" class="hidden" onchange="preview(this)">
+                    <img id="pre" class="hidden absolute inset-0 w-full h-full object-cover">
+                    <span id="plus" class="text-2xl text-gray-400">+</span>
+                </label>
+                <input type="text" id="name" placeholder="Item Name" class="flex-1 p-2 border rounded">
             </div>
+            
+            <div class="flex gap-1 mb-4">
+                <button onclick="tag(this)" class="tag border px-3 py-1 rounded-full text-[10px] font-bold">Costco</button>
+                <button onclick="tag(this)" class="tag border px-3 py-1 rounded-full text-[10px] font-bold">Whole Foods</button>
+                <button onclick="tag(this)" class="tag border px-3 py-1 rounded-full text-[10px] font-bold">Trader Joe's</button>
+            </div>
+            
+            <button onclick="save()" class="w-full bg-indigo-600 text-white font-bold py-3 rounded">Save to Library</button>
         </div>
 
-        <div class="flex justify-between items-center mb-4 px-1">
-            <h2 id="view-title" class="font-black uppercase text-xs tracking-widest text-indigo-900">All Items</h2>
-            <button onclick="toggleSortMode()" id="sort-btn" class="text-[10px] font-bold uppercase border-2 border-indigo-200 px-4 py-2 rounded-full bg-white text-indigo-600">Sort List</button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3" id="item-grid"></div>
+        <div class="grid grid-cols-2 gap-3" id="list"></div>
     </div>
 
     <script>
-        const DB_NAME = 'vGroceries_SmartFilter_v1';
-        let items = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        let currentFilter = 'All';
-        let selectedStores = [];
-        let currentImageData = null;
-        let isSortMode = false;
+        let db = JSON.parse(localStorage.getItem('Groceries_V12')) || [];
+        let currentTab = 'All';
+        let activeTags = [];
+        let imgData = null;
 
-        function toggleTag(btn) {
-            const store = btn.innerText.trim();
-            const index = selectedStores.indexOf(store);
-            if (index > -1) {
-                selectedStores.splice(index, 1);
-                btn.classList.remove('store-pill-selected');
+        function tag(btn) {
+            const t = btn.innerText;
+            if (activeTags.includes(t)) {
+                activeTags = activeTags.filter(x => x !== t);
+                btn.classList.remove('selected-tag');
             } else {
-                selectedStores.push(store);
-                btn.classList.add('store-pill-selected');
+                activeTags.push(t);
+                btn.classList.add('selected-tag');
             }
         }
 
-        function handleImage(input) {
+        function preview(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const size = 300;
-                        const scale = size / Math.max(img.width, img.height);
-                        canvas.width = img.width * scale; canvas.height = img.height * scale;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        currentImageData = canvas.toDataURL('image/jpeg', 0.6);
-                        document.getElementById('form-preview').src = currentImageData;
-                        document.getElementById('form-preview').classList.remove('hidden');
-                        document.getElementById('form-icon').classList.add('hidden');
-                    };
-                    img.src = e.target.result;
+                    imgData = e.target.result;
+                    document.getElementById('pre').src = imgData;
+                    document.getElementById('pre').classList.remove('hidden');
+                    document.getElementById('plus').classList.add('hidden');
                 };
                 reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function saveItem() {
-            const name = document.getElementById('item-name').value.trim();
-            if (!name || selectedStores.length === 0) return alert("Missing name or store!");
-            // IMPORTANT: We save the stores exactly as they appear on buttons
-            items.unshift({ id: Date.now(), name, stores: [...selectedStores], img: currentImageData || 'https://placehold.co/200x200?text=No+Photo', needed: true });
-            save(); resetForm();
+        function save() {
+            const n = document.getElementById('name').value;
+            if (!n || activeTags.length === 0) return alert("Add name and store");
+            db.unshift({ id: Date.now(), name: n, stores: [...activeTags], img: imgData, needed: true });
+            localStorage.setItem('Groceries_V12', JSON.stringify(db));
+            location.reload(); // Hard refresh to ensure UI updates
         }
 
-        function resetForm() {
-            selectedStores = []; currentImageData = null;
-            document.getElementById('item-name').value = '';
-            document.getElementById('form-preview').classList.add('hidden');
-            document.getElementById('form-icon').classList.remove('hidden');
-            document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('store-pill-selected'));
-            document.getElementById('file-input').value = '';
-        }
-
-        function toggleNeeded(id) {
-            if (isSortMode) return;
-            const item = items.find(i => i.id === id);
-            item.needed = !item.needed;
-            save();
-        }
-
-        function moveItem(id, direction) {
-            const index = items.findIndex(i => i.id === id);
-            if (direction === 'up' && index > 0) [items[index], items[index-1]] = [items[index-1], items[index]];
-            if (direction === 'down' && index < items.length - 1) [items[index], items[index+1]] = [items[index+1], items[index]];
-            save();
-        }
-
-        function setFilter(f) {
-            currentFilter = f;
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.toggle('active-tab', b.innerText.trim().toLowerCase() === f.toLowerCase());
-            });
-            document.getElementById('view-title').innerText = f;
+        function toggle(id) {
+            const i = db.find(x => x.id === id);
+            i.needed = !i.needed;
+            localStorage.setItem('Groceries_V12', JSON.stringify(db));
             render();
         }
 
-        function toggleSortMode() {
-            isSortMode = !isSortMode;
-            const btn = document.getElementById('sort-btn');
-            btn.innerText = isSortMode ? "Done" : "Sort List";
-            btn.classList.toggle('bg-indigo-600', isSortMode);
-            btn.classList.toggle('text-white', isSortMode);
+        function setTab(t) {
+            currentTab = t;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active-tab', b.innerText === t));
             render();
         }
-
-        function save() { localStorage.setItem(DB_NAME, JSON.stringify(items)); render(); }
 
         function render() {
-            const grid = document.getElementById('item-grid');
-            let filtered = items;
-            
-            // SMART FILTER: Matches store name regardless of case or hidden characters
-            if (currentFilter !== 'All') {
-                filtered = items.filter(item => {
-                    const storeMatch = item.stores.some(s => s.trim().toLowerCase() === currentFilter.trim().toLowerCase());
-                    return storeMatch && item.needed;
-                });
+            const grid = document.getElementById('list');
+            let filtered = db;
+            if (currentTab !== 'All') {
+                filtered = db.filter(i => i.stores.includes(currentTab) && i.needed);
             }
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-xl overflow-hidden shadow-md border-2 border-white relative ${!item.needed && currentFilter === 'All' ? 'checked-style' : ''}">
-                    <img
+            grid.innerHTML = filtered.map(i => `
+                <div class="bg-white rounded border relative ${!i.needed && currentTab === 'All' ? 'checked' : ''}">
+                    <img src="${i.img || 'https://placehold.co/100'}" class="w-full h-24 object-cover" onclick="toggle(${i.id})">
+                    <div class="p-2">
+                        <p class="text-[10px] font-bold uppercase truncate">${i.name}</p>
+                        <p class="text-[8px] text-gray-400">${i.stores.join(', ')}</p>
+                        <button onclick="if(confirm('Delete?')){db=db.filter(x=>x.id!=${i.id});localStorage.setItem('Groceries_V12',JSON.stringify(db));render();}" class="text-[8px] text-red-500 mt-1">DELETE</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        render();
+    </script>
+</body>
+</html>
