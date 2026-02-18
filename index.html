@@ -11,12 +11,14 @@
         .store-pill-selected { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         #store-nav::-webkit-scrollbar { display: none; }
         input[type="text"] { font-size: 16px !important; appearance: none; }
-        .modal { background: rgba(0,0,0,0.8); display: none; position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+        .modal { background: rgba(0,0,0,0.85); display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        /* Force buttons to be interactive */
+        button, .tag-pill, #new-photo { cursor: pointer; pointer-events: auto !important; position: relative; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen pb-32 font-sans">
 
-    <div class="sticky top-0 bg-white shadow-md z-50">
+    <div class="sticky top-0 bg-white shadow-md z-[100]">
         <div class="flex overflow-x-auto p-2 space-x-4 border-b" id="store-nav">
             <button onclick="setFilter('All')" class="nav-btn active-tab px-4 py-2 font-bold whitespace-nowrap text-sm">All Items</button>
             <button onclick="setFilter('Costco')" class="nav-btn px-4 py-2 font-bold whitespace-nowrap text-gray-400 text-sm">Costco</button>
@@ -25,12 +27,12 @@
         </div>
     </div>
 
-    <div class="p-4 bg-white mb-4 shadow-sm relative z-40">
+    <div class="p-4 bg-white mb-4 shadow-sm relative z-[50]">
         <h2 class="text-xs font-black uppercase text-gray-500 tracking-widest mb-3">Add New Item</h2>
         <div class="flex flex-col gap-3">
             <div class="flex gap-2">
                 <div class="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center relative overflow-hidden border-2 border-dashed border-gray-300">
-                    <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-20" onchange="processAndPreview(this, 'preview', 'plus-icon')">
+                    <input type="file" id="new-photo" accept="image/*" class="absolute inset-0 opacity-0 z-30" onchange="processAndPreview(this, 'preview', 'plus-icon')">
                     <img id="preview" class="hidden absolute inset-0 w-full h-full object-cover">
                     <span id="plus-icon" class="text-3xl text-gray-400">+</span>
                 </div>
@@ -47,12 +49,12 @@
         </div>
     </div>
 
-    <div class="px-4 relative z-10">
+    <div class="px-4 relative z-[10]">
         <div class="flex justify-between items-center mb-4">
             <h2 class="font-black text-gray-800 uppercase text-xs tracking-tighter" id="view-title">All Items</h2>
             <button onclick="toggleEditMode()" id="edit-btn" class="text-[10px] font-black uppercase border border-indigo-200 text-indigo-600 px-3 py-1 rounded-full bg-white">Edit Library</button>
         </div>
-        <div id="empty-state" class="hidden text-center py-10 text-gray-400 italic text-sm">No items needed here!</div>
+        <div id="empty-state" class="hidden text-center py-10 text-gray-400 italic text-sm">No items here!</div>
         <div class="grid grid-cols-2 gap-3" id="item-grid"></div>
     </div>
 
@@ -69,12 +71,12 @@
                 <button onclick="closeModal()" class="flex-1 bg-gray-200 py-3 rounded-xl font-bold text-xs uppercase">Cancel</button>
                 <button onclick="applyEdits()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold text-xs uppercase">Save Changes</button>
             </div>
-            <button onclick="deleteCurrentItem()" class="text-red-500 font-bold text-[10px] uppercase mt-2">Permanently Delete Item</button>
+            <button onclick="deleteCurrentItem()" class="text-red-500 font-bold text-[10px] uppercase mt-2">Delete Forever</button>
         </div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'vGroceries_matthew_v10_edit';
+        const STORAGE_KEY = 'vGroceries_matthew_v11_fixed';
         let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentFilter = 'All';
         let editModeActive = false;
@@ -109,7 +111,7 @@
                         canvas.height = img.height * scale;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resizedImageData = canvas.toDataURL('image/jpeg', 0.7);
+                        resizedImageData = canvas.toDataURL('image/jpeg', 0.6);
                         document.getElementById(imgId).src = resizedImageData;
                         document.getElementById(imgId).classList.remove('hidden');
                         document.getElementById(iconId).classList.add('hidden');
@@ -149,24 +151,40 @@
         function handleItemTap(id) {
             const item = items.find(i => i.id === id);
             if (editModeActive) {
-                openEditModal(item);
+                itemToEditId = item.id;
+                document.getElementById('edit-name').value = item.name;
+                selectedEditStores = [...item.stores];
+                document.querySelectorAll('.edit-tag').forEach(btn => {
+                    btn.classList.toggle('store-pill-selected', selectedEditStores.includes(btn.innerText.trim()));
+                });
+                document.getElementById('editModal').style.display = 'flex';
             } else {
                 item.needed = !item.needed;
                 saveAndRender();
             }
         }
 
-        function openEditModal(item) {
-            itemToEditId = item.id;
-            document.getElementById('edit-name').value = item.name;
-            selectedEditStores = [...item.stores];
-            document.querySelectorAll('.edit-tag').forEach(btn => {
-                btn.classList.toggle('store-pill-selected', selectedEditStores.includes(btn.innerText.trim()));
-            });
-            document.getElementById('editModal').style.display = 'flex';
-        }
-
         function applyEdits() {
             const item = items.find(i => i.id === itemToEditId);
             item.name = document.getElementById('edit-name').value.trim();
-            item.stores = [...selected
+            item.stores = [...selectedEditStores];
+            saveAndRender();
+            closeModal();
+        }
+
+        function deleteCurrentItem() {
+            if(confirm("Delete forever?")) {
+                items = items.filter(i => i.id !== itemToEditId);
+                saveAndRender();
+                closeModal();
+            }
+        }
+
+        function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
+        function saveAndRender() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+            render();
+        }
+
+        function
