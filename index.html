@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Grocery List</title>
+    <title>Grocery List Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .checked { opacity: 0.2; filter: grayscale(100%); }
@@ -46,7 +46,8 @@
     </div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('Groceries_V12')) || [];
+        // Updated DB name to clear out the old "heavy" items
+        let db = JSON.parse(localStorage.getItem('Groceries_V13_Unlimited')) || [];
         let currentTab = 'All';
         let activeTags = [];
         let imgData = null;
@@ -62,14 +63,27 @@
             }
         }
 
+        // The Resizer Logic: Compresses images to fit more in storage
         function preview(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    imgData = e.target.result;
-                    document.getElementById('pre').src = imgData;
-                    document.getElementById('pre').classList.remove('hidden');
-                    document.getElementById('plus').classList.add('hidden');
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 300; 
+                        const scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scale;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        imgData = canvas.toDataURL('image/jpeg', 0.6); // 60% quality is perfect for icons
+                        
+                        document.getElementById('pre').src = imgData;
+                        document.getElementById('pre').classList.remove('hidden');
+                        document.getElementById('plus').classList.add('hidden');
+                    };
+                    img.src = e.target.result;
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -79,14 +93,18 @@
             const n = document.getElementById('name').value;
             if (!n || activeTags.length === 0) return alert("Add name and store");
             db.unshift({ id: Date.now(), name: n, stores: [...activeTags], img: imgData, needed: true });
-            localStorage.setItem('Groceries_V12', JSON.stringify(db));
-            location.reload(); // Hard refresh to ensure UI updates
+            try {
+                localStorage.setItem('Groceries_V13_Unlimited', JSON.stringify(db));
+                location.reload(); 
+            } catch (e) {
+                alert("Storage full! Please delete some items.");
+            }
         }
 
         function toggle(id) {
             const i = db.find(x => x.id === id);
             i.needed = !i.needed;
-            localStorage.setItem('Groceries_V12', JSON.stringify(db));
+            localStorage.setItem('Groceries_V13_Unlimited', JSON.stringify(db));
             render();
         }
 
@@ -108,7 +126,7 @@
                     <div class="p-2">
                         <p class="text-[10px] font-bold uppercase truncate">${i.name}</p>
                         <p class="text-[8px] text-gray-400">${i.stores.join(', ')}</p>
-                        <button onclick="if(confirm('Delete?')){db=db.filter(x=>x.id!=${i.id});localStorage.setItem('Groceries_V12',JSON.stringify(db));render();}" class="text-[8px] text-red-500 mt-1">DELETE</button>
+                        <button onclick="if(confirm('Delete?')){db=db.filter(x=>x.id!=${i.id});localStorage.setItem('Groceries_V13_Unlimited',JSON.stringify(db));render();}" class="text-[8px] text-red-500 mt-1">DELETE</button>
                     </div>
                 </div>
             `).join('');
