@@ -1,1 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grocery List Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .checked { opacity: 0.5; filter: grayscale(50%); }
+        .active-tab { background: #6366f1 !important; color: white !important; }
+        .selected-tag { background: #6366f1 !important; color: white !important; }
+        button, input, label { min-height: 48px; touch-action: manipulation; }
+        #store-nav::-webkit-scrollbar { display: none; }
+        body { font-size: 16px; }
+    </style>
+</head>
+<body class="bg-gray-100 pb-32">
+
+    <div class="sticky top-0 bg-white border-b z-50 flex overflow-x-auto p-2 gap-2" id="store-nav">
+        <button onclick="setTab('All')" class="tab-btn active-tab px-5 py-2 rounded border text-sm font-bold">All</button>
+        <button onclick="setTab('Costco')" class="tab-btn px-5 py-2 rounded border text-sm font-bold bg-gray-50">Costco</button>
+        <button onclick="setTab('Whole Foods')" class="tab-btn px-5 py-2 rounded border text-sm font-bold bg-gray-50">Whole Foods</button>
+        <button onclick="setTab('Trader Joe\'s')" class="tab-btn px-5 py-2 rounded border text-sm font-bold bg-gray-50">Trader Joe's</button>
+    </div>
+
+    <div class="p-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm mb-6 border">
+            <div class="flex gap-3 mb-4">
+                <label for="pic" class="w-20 h-20 bg-gray-200 rounded flex items-center justify-center relative overflow-hidden border cursor-pointer">
+                    <input type="file" id="pic" accept="image/*" class="hidden" onchange="previewImage(this)">
+                    <img id="pre" class="hidden absolute inset-0 w-full h-full object-cover">
+                    <span id="plus" class="text-3xl text-gray-400">+</span>
+                </label>
+                <input type="text" id="name" placeholder="Item Name" class="flex-1 p-3 border rounded text-lg">
+            </div>
+            
+            <div class="flex gap-1 mb-4">
+                <button onclick="tag(this)" class="tag border px-4 py-2 rounded-full text-xs font-bold">Costco</button>
+                <button onclick="tag(this)" class="tag border px-4 py-2 rounded-full text-xs font-bold">Whole Foods</button>
+                <button onclick="tag(this)" class="tag border px-4 py-2 rounded-full text-xs font-bold">Trader Joe's</button>
+            </div>
+            
+            <button onclick="save()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded text-lg">Save to Library</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3" id="list"></div>
+        
+        <div class="mt-10 p-4 bg-gray-200 rounded-xl border-2 border-dashed border-gray-400 text-center">
+            <p class="text-xs font-bold text-gray-600 mb-2 uppercase">Database Tools</p>
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="flex-1 bg-white border border-gray-400 py-2 rounded text-xs font-bold">BACKUP (Copy)</button>
+                <button onclick="showImport()" class="flex-1 bg-white border border-gray-400 py-2 rounded text-xs font-bold">RESTORE (Paste)</button>
+            </div>
+            <div id="import-area" class="hidden mt-4">
+                <textarea id="transfer-box" class="w-full h-32 p-2 text-[10px] border rounded mb-2" placeholder="Paste backup text here..."></textarea>
+                <button onclick="finalRestore()" class="w-full bg-green-600 text-white py-3 rounded font-bold">ACTIVATE RESTORE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const KEY = 'Groceries_V14_Clean'; 
+        let db = JSON.parse(localStorage.getItem(KEY)) || [];
+        let currentTab = 'All';
+        let activeTags = [];
+        let imgData = null;
+
+        function tag(btn) {
+            const t = btn.innerText;
+            if (activeTags.includes(t)) {
+                activeTags = activeTags.filter(x => x !== t);
+                btn.classList.remove('selected-tag');
+            } else {
+                activeTags.push(t);
+                btn.classList.add('selected-tag');
+            }
+        }
+
+        function previewImage(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 300;
+                    const scale = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    imgData = canvas.toDataURL('image/jpeg', 0.6);
+                    document.getElementById('pre').src = imgData;
+                    document.getElementById('pre').classList.remove('hidden');
+                    document.getElementById('plus').classList.add('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function save() {
+            const n = document.getElementById('name').value;
+            if (!n || activeTags.length === 0) return alert("Add name and select at least one store.");
+            db.unshift({ id: Date.now(), name: n, stores: [...activeTags], img: imgData, needed: true });
+            localStorage.setItem(KEY, JSON.stringify(db));
+            location.reload(); 
+        }
+
+        function exportData() {
+            const box = document.getElementById('transfer-box');
+            document.getElementById('import-area').classList.remove('hidden');
+            box.value = JSON.stringify(db);
+            box.select();
+            document.execCommand('copy');
+            alert("Backup copied! Paste it into a Note to save it.");
+        }
+
+        function showImport() {
+            document.getElementById('import-area').classList.toggle('hidden');
+        }
+
+        function finalRestore() {
+            const data = document.getElementById('transfer-box').value;
+            if (data.length < 10) return alert("Please paste the data first.");
+            if (confirm("Confirm: Overwrite current list with backup?")) {
+                try {
+                    localStorage.clear();
+                    localStorage.setItem(KEY, data);
+                    alert("Success! The app will now reload.");
+                    window.location.replace(window.location.href);
+                } catch (e) {
+                    alert("Error saving data. Memory may be full.");
+                }
+            }
+        }
+
+        function moveToTop(id) {
+            const idx = db.findIndex(x => x.id === id);
+            const item = db.splice(idx, 1)[0];
+            db.unshift(item);
+            localStorage.setItem(KEY, JSON.stringify(db));
+            render();
+        }
+
+        function toggle(id) {
+            const i = db.find(x => x.id === id);
+            i.needed = !i.needed;
+            localStorage.setItem(KEY, JSON.stringify(db));
+            render();
+        }
+
+        function setTab(t) {
+            currentTab = t;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active-tab', b.innerText === t));
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('list');
+            let filtered = db;
+            if (currentTab !== 'All') {
+                filtered = db.filter(i => i.stores.includes(currentTab) && i.needed);
+            }
+            grid.innerHTML = filtered.map(i => `
+                <div class="bg-white rounded border-2 relative ${!i.needed && currentTab === 'All' ? 'checked' : ''}">
+                    <img src="${i.img || 'https://placehold.co/100'}" class="w-full h-28 object-cover" onclick="toggle(${i.id})">
+                    <div class="p-3">
+                        <p class="text-[11px] font-black uppercase mb-3 leading-tight">${i.name}</p>
+                        <div class="flex justify-between items-center">
+                            <button onclick="moveToTop(${i.id})" class="text-[9px] bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded font-bold border border-indigo-100">↑ TOP</button>
+                            <button onclick="if(confirm('Delete?')){db=db.filter(x=>x.id!=${i.id});localStorage.setItem(KEY,JSON.stringify(db));render();}" class="text-[9px] text-red-400 font-bold px-2">DEL</button>
+                        </div>
+                    </div>
+                    ${!i.needed && currentTab === 'All' ? '<div class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-indigo-600 pointer-events-none" style="text-shadow: 2px 2px 10px white;">✓</div>' : ''}
+                </div>
+            `).join('');
+        }
+        render();
+    </script>
+</body>
+</html>
 
